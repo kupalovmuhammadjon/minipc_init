@@ -12,13 +12,19 @@ services:
       GATE_SERIAL_PORT: ${GATE_SERIAL_PORT:-}
     ports:
       - "8088:8088"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
 
   kiosk:
     image: ghcr.io/rpardini/docker-chromium-x11:latest
-    profiles: ["kiosk", "linux"]
     container_name: turniket-kiosk
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
       LAUNCH_URL: http://localhost:8088/frontend/index.html
       CHROMIUM_FLAGS: --kiosk --noerrdialogs --disable-infobars --check-for-update-interval=31536000 --start-fullscreen --simulate-outdated-no-au='Tue, 31 Dec 2099 23:59:59 GMT' --window-position=0,0 --no-first-run --fast --fast-start --disable-features=TranslateUI --disk-cache-dir=/dev/null
