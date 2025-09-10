@@ -1,0 +1,30 @@
+services:
+  backend:
+    # Static image reference (always pulls latest tag from Docker Hub)
+    image: kupalovmuhammadjo/turniket:latest
+    restart: unless-stopped
+    environment:
+      HTTP_ADDR: ":8088"
+      VALIDATOR_URL: ${VALIDATOR_URL:-http://ice-city-kassa.knative-fn.u-code.io}
+      VALIDATOR_TOKEN: ${VALIDATOR_TOKEN:-}
+      NFC_SOURCE: ${NFC_SOURCE:-stdin}
+      PSEUDO_ALLOW_ALL: ${PSEUDO_ALLOW_ALL:-false}
+      GATE_SERIAL_PORT: ${GATE_SERIAL_PORT:-}
+    ports:
+      - "8088:8088"
+
+  kiosk:
+    image: ghcr.io/rpardini/docker-chromium-x11:latest
+    profiles: ["kiosk", "linux"]
+    container_name: turniket-kiosk
+    depends_on:
+      - backend
+    environment:
+      LAUNCH_URL: http://localhost:8088/frontend/index.html
+      CHROMIUM_FLAGS: --kiosk --noerrdialogs --disable-infobars --check-for-update-interval=31536000 --start-fullscreen --simulate-outdated-no-au='Tue, 31 Dec 2099 23:59:59 GMT' --window-position=0,0 --no-first-run --fast --fast-start --disable-features=TranslateUI --disk-cache-dir=/dev/null
+      DISPLAY: ${DISPLAY:-:0}
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${XAUTHORITY:-$HOME/.Xauthority}:/root/.Xauthority:ro
