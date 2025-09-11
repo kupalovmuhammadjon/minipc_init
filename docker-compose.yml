@@ -11,6 +11,7 @@ services:
       - /dev/ttyUSB0:/dev/ttyUSB0
       - /dev/ttyUSB1:/dev/ttyUSB1
       - /dev/bus/usb:/dev/bus/usb
+    # Additional groups so container user can access serial devices
     group_add:
       - "dialout"
       - "tty"
@@ -36,4 +37,4 @@ services:
     restart: unless-stopped
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      - "${XAUTHORITY:-$HOME/.Xauthority}:/root/.Xauthority:ro"
+      - "${XAUTHORITY:-$HOME/.Xauthority}:/home/kiosk/.Xauthority:ro"
