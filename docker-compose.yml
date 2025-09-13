@@ -28,7 +28,7 @@ services:
     build:
       context: ./kiosk
       dockerfile: Dockerfile
-    image: kupalovmuhammadjo/turniket:latest
+    image: kupalovmuhammadjo/turniket-kiosk:latest
     container_name: turniket-kiosk
     depends_on:
       - backend
