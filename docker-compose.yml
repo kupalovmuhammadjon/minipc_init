@@ -22,6 +22,7 @@ services:
       NFC_SOURCE: "${NFC_SOURCE:-none}"
       PSEUDO_ALLOW_ALL: "${PSEUDO_ALLOW_ALL:-false}"
       GATE_SERIAL_PORT: "${GATE_SERIAL_PORT:-}"
+      GATE_OPEN_TIMEOUT_S: "${GATE_OPEN_TIMEOUT_S:-2}"
       MAC_ADDRESS: "${MAC_ADDRESS:-}"
 
   kiosk:
