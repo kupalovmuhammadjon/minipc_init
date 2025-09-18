@@ -11,7 +11,6 @@ services:
       - /dev/ttyUSB0:/dev/ttyUSB0
       - /dev/ttyUSB1:/dev/ttyUSB1
       - /dev/bus/usb:/dev/bus/usb
-    # Additional groups so container user can access serial devices
     group_add:
       - "dialout"
       - "tty"
@@ -41,3 +40,11 @@ services:
     restart: always
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 300 --cleanup backend kiosk
