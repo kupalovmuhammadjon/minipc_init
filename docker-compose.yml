@@ -5,14 +5,13 @@ services:
     network_mode: host
     restart: unless-stopped
     privileged: true
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
     devices:
       - /dev/ttyACM0:/dev/ttyACM0
       - /dev/ttyACM1:/dev/ttyACM1
       - /dev/ttyUSB0:/dev/ttyUSB0
       - /dev/ttyUSB1:/dev/ttyUSB1
       - /dev/bus/usb:/dev/bus/usb
+    # Additional groups so container user can access serial devices
     group_add:
       - "dialout"
       - "tty"
@@ -23,7 +22,8 @@ services:
       NFC_SOURCE: "${NFC_SOURCE:-none}"
       PSEUDO_ALLOW_ALL: "${PSEUDO_ALLOW_ALL:-false}"
       GATE_SERIAL_PORT: "${GATE_SERIAL_PORT:-}"
-      GATE_OPEN_TIMEOUT_S: "${GATE_OPEN_TIMEOUT_S:-2}"
+      GATE_OPEN_TIMEOUT_S: 5
+      GATE_CONNECT_RETRY_S: 7
       MAC_ADDRESS: "${MAC_ADDRESS:-}"
 
   kiosk:
@@ -32,8 +32,6 @@ services:
       dockerfile: Dockerfile
     image: kupalovmuhammadjo/turniket-kiosk:latest
     container_name: turniket-kiosk
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
     depends_on:
       - backend
     environment:
@@ -44,11 +42,3 @@ services:
     restart: always
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-
-  watchtower:
-    image: containrrr/watchtower:latest
-    container_name: watchtower
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 300 --cleanup --label-enable
