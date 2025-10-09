@@ -13,6 +13,8 @@ services:
       - /dev/ttyUSB0:/dev/ttyUSB0
       - /dev/ttyUSB1:/dev/ttyUSB1
       - /dev/bus/usb:/dev/bus/usb
+    volumes:
+      - /dev/serial/by-id:/dev/serial/by-id:ro
     # Additional groups so container user can access serial devices
     group_add:
       - "dialout"
