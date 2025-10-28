@@ -18,7 +18,31 @@ URL=${1:-"http://localhost:3000"}
 
 echo "Starting Chromium on $URL"
 
-# Just start Chromium simply
+# Start X server first if not running
+if ! xdpyinfo -display :0 >/dev/null 2>&1; then
+    echo "Starting X server..."
+    sudo X :0 -ac -nolisten tcp -noreset >/dev/null 2>&1 &
+    sleep 5
+    
+    # Wait for X server
+    count=0
+    while [ $count -lt 10 ]; do
+        if xdpyinfo -display :0 >/dev/null 2>&1; then
+            echo "X server ready"
+            break
+        fi
+        echo "Waiting for X server... ($count/10)"
+        sleep 1
+        count=$((count + 1))
+    done
+else
+    echo "X server already running"
+fi
+
+# Create user data directory
+mkdir -p /home/icecity/.config/chromium-kiosk
+
+# Start Chromium with proper flags
 chromium-browser \
     --kiosk \
     --no-sandbox \
@@ -29,6 +53,7 @@ chromium-browser \
     --disable-default-apps \
     --disable-extensions \
     --disable-web-security \
+    --user-data-dir=/home/icecity/.config/chromium-kiosk \
     --no-default-browser-check \
     --disable-popup-blocking \
     "$URL" &
@@ -51,6 +76,7 @@ while true; do
             --disable-default-apps \
             --disable-extensions \
             --disable-web-security \
+            --user-data-dir=/home/icecity/.config/chromium-kiosk \
             --no-default-browser-check \
             --disable-popup-blocking \
             "$URL" &
