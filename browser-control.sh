@@ -23,18 +23,18 @@ case "$1" in
         ;;
     docker-start)
         echo "Starting Docker kiosk container..."
-        docker-compose up -d kiosk
-        docker-compose logs -f kiosk
+        docker compose up -d kiosk
+        docker compose logs -f kiosk
         ;;
     docker-stop)
         echo "Stopping Docker kiosk container..."
-        docker-compose stop kiosk
+        docker compose stop kiosk
         echo "Docker kiosk stopped."
         ;;
     docker-restart)
         echo "Restarting Docker kiosk container..."
-        docker-compose restart kiosk
-        docker-compose logs -f kiosk
+        docker compose restart kiosk
+        docker compose logs -f kiosk
         ;;
     restart)
         echo "Restarting browser service..."
