@@ -84,6 +84,11 @@ export XDG_RUNTIME_DIR=/tmp/runtime-$(id -u)
 export XDG_CONFIG_HOME=/tmp/config-$(id -u)
 export XDG_CACHE_HOME=/tmp/cache-$(id -u)
 
+# Suppress X11 and keyboard warnings
+export XKB_DEFAULT_LAYOUT=us
+export XKB_DEFAULT_VARIANT=""
+export XKB_DEFAULT_OPTIONS=""
+
 # Create runtime directories
 mkdir -p "$XDG_RUNTIME_DIR" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
 
@@ -104,7 +109,7 @@ start_x_server() {
     chmod 1777 /tmp/.X11-unix 2>/dev/null || true
     
     # Start Xvfb (Virtual framebuffer X server) - works on headless servers
-    Xvfb :0 -screen 0 1920x1080x24 -ac -nolisten tcp -dpi 96 +extension GLX +extension RANDR +extension RENDER &
+    Xvfb :0 -screen 0 1920x1080x24 -ac -nolisten tcp -dpi 96 +extension GLX +extension RANDR +extension RENDER 2>/dev/null &
     
     # Wait for X server to be ready
     local count=0
