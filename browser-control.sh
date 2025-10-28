@@ -24,38 +24,27 @@ case "$1" in
     docker-start)
         echo "Starting Docker kiosk container..."
         
-        # First, make sure X server is running
+        # Check if X server is running
         if ! xdpyinfo -display :0 >/dev/null 2>&1; then
-            echo "X server not running. Starting X server first..."
-            sudo systemctl start $SERVICE_NAME
-            sleep 5
-            
-            # Wait for X server to be ready
-            count=0
-            while [ $count -lt 15 ]; do
-                if xdpyinfo -display :0 >/dev/null 2>&1; then
-                    echo "X server is ready"
-                    break
-                fi
-                echo "Waiting for X server... ($count/15)"
-                sleep 1
-                count=$((count + 1))
-            done
-            
-            if [ $count -eq 15 ]; then
-                echo "ERROR: X server failed to start"
-                exit 1
-            fi
-            
-            # Stop the native browser but keep X server
-            pkill -f chromium-browser || true
-            echo "X server ready, native browser stopped"
-        else
-            echo "X server already running"
+            echo "❌ ERROR: X server is not running!"
+            echo "Please start the native browser first to initialize X server:"
+            echo "  ./browser-control.sh start"
+            echo "Then stop it and try Docker again:"
+            echo "  ./browser-control.sh stop"
+            echo "  ./browser-control.sh docker-start"
+            exit 1
         fi
         
-        # Now start the Docker container
+        echo "✅ X server is running"
+        
+        # Stop any native browser but keep X server
+        pkill -f chromium-browser || true
+        echo "Native browser stopped, keeping X server"
+        
+        # Start the Docker container
+        echo "Starting Docker kiosk container..."
         docker compose up -d kiosk
+        echo "Docker kiosk started. Showing logs (Ctrl+C to exit logs):"
         docker compose logs -f kiosk
         ;;
     docker-stop)
