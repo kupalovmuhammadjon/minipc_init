@@ -21,6 +21,21 @@ case "$1" in
         # Keep X server running but kill browsers
         echo "Browser stopped. Monitor will show desktop/terminal."
         ;;
+    docker-start)
+        echo "Starting Docker kiosk container..."
+        docker-compose up -d kiosk
+        docker-compose logs -f kiosk
+        ;;
+    docker-stop)
+        echo "Stopping Docker kiosk container..."
+        docker-compose stop kiosk
+        echo "Docker kiosk stopped."
+        ;;
+    docker-restart)
+        echo "Restarting Docker kiosk container..."
+        docker-compose restart kiosk
+        docker-compose logs -f kiosk
+        ;;
     restart)
         echo "Restarting browser service..."
         sudo systemctl restart $SERVICE_NAME
@@ -55,16 +70,21 @@ case "$1" in
         echo "Browser will NOT start automatically on boot."
         ;;
     *)
-        echo "Usage: $0 {start|stop|restart|status|kill-all|enable|disable}"
+        echo "Usage: $0 {start|stop|restart|status|kill-all|enable|disable|docker-start|docker-stop|docker-restart}"
         echo ""
-        echo "Commands:"
-        echo "  start     - Start the browser service"
+        echo "Native Browser Commands:"
+        echo "  start     - Start the native browser service"
         echo "  stop      - Stop browser but keep X server (shows terminal)"
         echo "  restart   - Restart the browser"
         echo "  status    - Show current status"
         echo "  kill-all  - Stop everything including X server"
         echo "  enable    - Enable auto-start on boot"
         echo "  disable   - Disable auto-start on boot"
+        echo ""
+        echo "Docker Browser Commands:"
+        echo "  docker-start    - Start Docker kiosk container"
+        echo "  docker-stop     - Stop Docker kiosk container"
+        echo "  docker-restart  - Restart Docker kiosk container"
         exit 1
         ;;
 esac

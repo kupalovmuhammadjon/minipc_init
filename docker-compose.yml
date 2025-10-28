@@ -42,12 +42,21 @@ services:
       - backend
     environment:
       LAUNCH_URL: "http://localhost:8088/frontend/index.html"
-      CHROMIUM_FLAGS: "--kiosk --no-sandbox --noerrdialogs --disable-infobars --check-for-update-interval=31536000 --start-fullscreen --no-first-run --disable-features=TranslateUI --disable-gpu --disable-dev-shm-usage --user-data-dir=/home/kiosk/.config/chromium --disk-cache-dir=/tmp/chromium-cache"
       DISPLAY: ":0"
+      QT_QPA_PLATFORM: "xcb"
+      GDK_BACKEND: "x11"
     network_mode: host
     restart: always
+    privileged: false
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    # Wait for X server to be ready
+    healthcheck:
+      test: ["CMD", "xdpyinfo", "-display", ":0"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
   watchtower:
     image: containrrr/watchtower:latest
     container_name: watchtower
