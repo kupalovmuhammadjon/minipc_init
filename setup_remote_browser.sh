@@ -14,12 +14,10 @@ sudo apt update
 # Install minimal X11 components (no desktop environment)
 echo "🖥️  Installing minimal X11 server..."
 sudo apt install -y \
-    xserver-xorg-core \
-    xserver-xorg-input-all \
-    xserver-xorg-video-all \
-    xinit \
+    xvfb \
     x11-utils \
-    x11-xserver-utils
+    x11-xserver-utils \
+    xauth
 
 # Install essential libraries for Chromium (minimal set)
 echo "📚 Installing essential browser libraries..."
@@ -74,33 +72,38 @@ sudo tee /usr/local/bin/start-headless-browser.sh > /dev/null << 'EOF'
 export DISPLAY=:0
 export XAUTHORITY=/tmp/.X0-auth
 
-# Function to start X server properly
+# Function to start Xvfb (Virtual X server) properly
 start_x_server() {
-    echo "Starting X server..."
+    echo "Starting Xvfb (Virtual X server)..."
     
     # Kill any existing X server on display :0
+    sudo pkill -f "Xvfb.*:0" || true
     sudo pkill -f "X.*:0" || true
     sleep 2
     
     # Remove any existing lock files
     sudo rm -f /tmp/.X0-lock /tmp/.X11-unix/X0
     
-    # Start X server with proper options for headless operation
-    sudo X :0 -ac -nolisten tcp -noreset +extension GLX +extension RANDR +extension RENDER -logfile /var/log/Xorg.0.log &
+    # Create X11 socket directory if it doesn't exist
+    sudo mkdir -p /tmp/.X11-unix
+    sudo chmod 1777 /tmp/.X11-unix
+    
+    # Start Xvfb (Virtual framebuffer X server) - works on headless servers
+    Xvfb :0 -screen 0 1920x1080x24 -ac -nolisten tcp -dpi 96 +extension GLX +extension RANDR +extension RENDER &
     
     # Wait for X server to be ready
     local count=0
-    while [ $count -lt 30 ]; do
+    while [ $count -lt 10 ]; do
         if xdpyinfo -display :0 >/dev/null 2>&1; then
-            echo "X server is ready"
+            echo "Xvfb is ready"
             return 0
         fi
-        echo "Waiting for X server... ($count/30)"
+        echo "Waiting for Xvfb... ($count/10)"
         sleep 1
         count=$((count + 1))
     done
     
-    echo "Failed to start X server"
+    echo "Failed to start Xvfb"
     return 1
 }
 
