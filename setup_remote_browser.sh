@@ -18,7 +18,8 @@ sudo apt install -y \
     xserver-xorg-input-all \
     xserver-xorg-video-all \
     xinit \
-    x11-utils
+    x11-utils \
+    x11-xserver-utils
 
 # Install essential libraries for Chromium (minimal set)
 echo "📚 Installing essential browser libraries..."
@@ -50,25 +51,63 @@ echo "📝 Creating headless browser script..."
 sudo tee /usr/local/bin/start-headless-browser.sh > /dev/null << 'EOF'
 #!/bin/bash
 
-# Set display
+# Set display and other environment variables
 export DISPLAY=:0
+export XAUTHORITY=/tmp/.X0-auth
 
-# Start X server in background if not running
-if ! pgrep -x "Xorg" > /dev/null; then
-    sudo X :0 -ac -nolisten tcp vt7 &
-    sleep 3
+# Function to start X server properly
+start_x_server() {
+    echo "Starting X server..."
+    
+    # Kill any existing X server on display :0
+    sudo pkill -f "X.*:0" || true
+    sleep 2
+    
+    # Remove any existing lock files
+    sudo rm -f /tmp/.X0-lock /tmp/.X11-unix/X0
+    
+    # Start X server with proper options for headless operation
+    sudo X :0 -ac -nolisten tcp -noreset +extension GLX +extension RANDR +extension RENDER -logfile /var/log/Xorg.0.log &
+    
+    # Wait for X server to be ready
+    local count=0
+    while [ $count -lt 30 ]; do
+        if xdpyinfo -display :0 >/dev/null 2>&1; then
+            echo "X server is ready"
+            return 0
+        fi
+        echo "Waiting for X server... ($count/30)"
+        sleep 1
+        count=$((count + 1))
+    done
+    
+    echo "Failed to start X server"
+    return 1
+}
+
+# Check if X server is running, if not start it
+if ! xdpyinfo -display :0 >/dev/null 2>&1; then
+    if ! start_x_server; then
+        echo "Cannot start X server, exiting"
+        exit 1
+    fi
+else
+    echo "X server already running"
 fi
 
 # Get the URL from argument or use default
 URL=${1:-"http://localhost:3000"}
 
+# Wait a bit more for X server to stabilize
+sleep 2
+
 # Start your kiosk application
 if command -v turniket-kiosk &> /dev/null; then
     echo "Starting turniket-kiosk on $URL"
-    turniket-kiosk --kiosk --no-sandbox --disable-dev-shm-usage "$URL"
+    turniket-kiosk --kiosk --no-sandbox --disable-dev-shm-usage --disable-gpu --disable-software-rasterizer "$URL"
 else
     echo "turniket-kiosk not found. Please install it or use alternative browser."
-    echo "Example: chromium-browser --kiosk --no-sandbox --disable-dev-shm-usage '$URL'"
+    echo "You can try: chromium-browser --kiosk --no-sandbox --disable-dev-shm-usage --disable-gpu '$URL'"
 fi
 EOF
 
@@ -86,6 +125,7 @@ Wants=multi-user.target
 Type=simple
 User=icecity
 Environment=DISPLAY=:0
+ExecStartPre=/bin/sleep 10
 ExecStart=/usr/local/bin/start-headless-browser.sh
 Restart=always
 RestartSec=10
