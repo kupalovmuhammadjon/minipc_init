@@ -52,7 +52,8 @@ sudo apt install -y \
     libxkbfile1 \
     ca-certificates \
     wget \
-    gnupg
+    gnupg \
+    xdg-utils
 
 # Install a fallback browser if no browser is available
 echo "🌐 Installing fallback browser (Chromium)..."
@@ -73,26 +74,34 @@ sudo tee /usr/local/bin/start-headless-browser.sh > /dev/null << 'EOF'
 export DISPLAY=:0
 export XAUTHORITY=/tmp/.X0-auth
 
-# Fix D-Bus issues for headless environment
-export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+# Completely disable D-Bus for headless kiosk mode
+export DBUS_SESSION_BUS_ADDRESS=""
 export QT_QPA_PLATFORM=xcb
 export GDK_BACKEND=x11
+
+# Additional environment variables to suppress errors
+export XDG_RUNTIME_DIR=/tmp/runtime-$(id -u)
+export XDG_CONFIG_HOME=/tmp/config-$(id -u)
+export XDG_CACHE_HOME=/tmp/cache-$(id -u)
+
+# Create runtime directories
+mkdir -p "$XDG_RUNTIME_DIR" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
 
 # Function to start Xvfb (Virtual X server) properly
 start_x_server() {
     echo "Starting Xvfb (Virtual X server)..."
     
     # Kill any existing X server on display :0
-    sudo pkill -f "Xvfb.*:0" || true
-    sudo pkill -f "X.*:0" || true
+    pkill -f "Xvfb.*:0" || true
+    pkill -f "X.*:0" || true
     sleep 2
     
     # Remove any existing lock files
-    sudo rm -f /tmp/.X0-lock /tmp/.X11-unix/X0
+    rm -f /tmp/.X0-lock /tmp/.X11-unix/X0 2>/dev/null || true
     
     # Create X11 socket directory if it doesn't exist
-    sudo mkdir -p /tmp/.X11-unix
-    sudo chmod 1777 /tmp/.X11-unix
+    mkdir -p /tmp/.X11-unix 2>/dev/null || true
+    chmod 1777 /tmp/.X11-unix 2>/dev/null || true
     
     # Start Xvfb (Virtual framebuffer X server) - works on headless servers
     Xvfb :0 -screen 0 1920x1080x24 -ac -nolisten tcp -dpi 96 +extension GLX +extension RANDR +extension RENDER &
@@ -129,15 +138,10 @@ URL=${1:-"http://localhost:3000"}
 # Wait a bit more for X server to stabilize
 sleep 2
 
-# Start D-Bus session for the user if not running
-if [ -z "$DBUS_SESSION_BUS_ADDRESS" ] || ! dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames >/dev/null 2>&1; then
-    echo "Starting D-Bus session..."
-    eval $(dbus-launch --sh-syntax --exit-with-session)
-    export DBUS_SESSION_BUS_ADDRESS
-    export DBUS_SESSION_BUS_PID
-fi
+# Skip D-Bus completely for headless kiosk mode
+echo "Starting browser in headless kiosk mode (D-Bus disabled)..."
 
-# Start your kiosk application with additional flags to handle headless environment
+# Start your kiosk application with maximum flags to suppress all system integration
 if command -v turniket-kiosk &> /dev/null; then
     echo "Starting turniket-kiosk on $URL"
     turniket-kiosk \
@@ -149,14 +153,21 @@ if command -v turniket-kiosk &> /dev/null; then
         --disable-background-timer-throttling \
         --disable-backgrounding-occluded-windows \
         --disable-renderer-backgrounding \
-        --disable-features=TranslateUI \
+        --disable-features=TranslateUI,VizDisplayCompositor \
         --disable-ipc-flooding-protection \
         --no-first-run \
         --disable-default-apps \
         --disable-popup-blocking \
         --disable-prompt-on-repost \
         --no-message-box \
-        "$URL"
+        --disable-dbus \
+        --disable-extensions \
+        --disable-plugins \
+        --disable-web-security \
+        --disable-features=VizDisplayCompositor \
+        --log-level=3 \
+        --silent \
+        "$URL" 2>/dev/null
 elif command -v chromium-browser &> /dev/null; then
     echo "Starting Chromium browser in kiosk mode on $URL"
     chromium-browser \
@@ -172,9 +183,15 @@ elif command -v chromium-browser &> /dev/null; then
         --disable-background-timer-throttling \
         --disable-backgrounding-occluded-windows \
         --disable-renderer-backgrounding \
-        --disable-features=TranslateUI \
+        --disable-features=TranslateUI,VizDisplayCompositor \
         --disable-default-apps \
-        "$URL"
+        --disable-dbus \
+        --disable-extensions \
+        --disable-plugins \
+        --disable-web-security \
+        --log-level=3 \
+        --silent \
+        "$URL" 2>/dev/null
 elif command -v google-chrome &> /dev/null; then
     echo "Starting Google Chrome in kiosk mode on $URL"
     google-chrome \
