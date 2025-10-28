@@ -25,25 +25,41 @@ start_x_server() {
     mkdir -p /tmp/.X11-unix 2>/dev/null || true
     chmod 1777 /tmp/.X11-unix 2>/dev/null || true
     
-    # Start X server on physical display
-    X :0 -nolisten tcp vt1 >/dev/null 2>&1 &
-    
-    # Wait for X server
-    local count=0
-    while [ $count -lt 15 ]; do
+    # Try different X server startup methods
+    echo "Trying method 1: startx..."
+    if startx -- :0 vt1 -keeptty 2>/dev/null &
+    then
+        sleep 5
         if xdpyinfo -display :0 >/dev/null 2>&1; then
-            echo "X server is ready on physical display"
-            sleep 2
-            # Start minimal window manager
+            echo "X server started with startx"
             DISPLAY=:0 openbox >/dev/null 2>&1 &
             return 0
         fi
-        echo "Waiting for X server... ($count/15)"
+    fi
+    
+    echo "Trying method 2: direct X server..."
+    pkill -f "X.*:0" || true
+    sleep 2
+    
+    # Try with different options
+    X :0 -ac -nolisten tcp -noreset 2>/tmp/x.log &
+    
+    # Wait for X server
+    local count=0
+    while [ $count -lt 10 ]; do
+        if xdpyinfo -display :0 >/dev/null 2>&1; then
+            echo "X server is ready on physical display"
+            sleep 2
+            DISPLAY=:0 openbox >/dev/null 2>&1 &
+            return 0
+        fi
+        echo "Waiting for X server... ($count/10)"
         sleep 1
         count=$((count + 1))
     done
     
-    echo "Failed to start X server"
+    echo "Failed to start X server. Check /tmp/x.log for errors"
+    cat /tmp/x.log 2>/dev/null || true
     return 1
 }
 
