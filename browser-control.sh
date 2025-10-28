@@ -3,8 +3,8 @@
 # Browser Control Script
 # Usage: ./browser-control.sh [start|stop|restart|status]
 
-# Update to use the new approach
-SERVICE_NAME="stable-browser.service"
+# Update to use the working service
+SERVICE_NAME="working-browser.service"
 
 case "$1" in
     start)

@@ -39,8 +39,10 @@ else
     echo "X server already running"
 fi
 
-# Create user data directory
+# Create user data directory with proper permissions
+rm -rf /home/icecity/.config/chromium-kiosk 2>/dev/null
 mkdir -p /home/icecity/.config/chromium-kiosk
+chmod 755 /home/icecity/.config/chromium-kiosk
 
 # Start Chromium with proper flags
 chromium-browser \

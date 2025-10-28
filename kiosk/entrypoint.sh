@@ -32,20 +32,23 @@ echo "URL: $URL"
 echo "Display: $DISPLAY"
 echo "Chromium flags: $CHROMIUM_FLAGS"
 
-# Start Chromium with the specified flags
+# Create user data directory
+mkdir -p /home/kiosk/.config/chromium-docker
+chmod 755 /home/kiosk/.config/chromium-docker
+
+# Start Chromium with the specified flags (matching our working native setup)
 exec chromium \
     --display="${DISPLAY}" \
+    --kiosk \
     --no-sandbox \
     --disable-dev-shm-usage \
     --disable-gpu \
-    --kiosk \
     --no-first-run \
     --disable-infobars \
     --disable-default-apps \
     --disable-extensions \
-    --disable-plugins \
     --disable-web-security \
-    --disable-features=VizDisplayCompositor,TranslateUI \
+    --user-data-dir=/home/kiosk/.config/chromium-docker \
     --no-default-browser-check \
     --disable-popup-blocking \
     --disable-translate \
@@ -55,6 +58,4 @@ exec chromium \
     --disable-field-trial-config \
     --disable-back-forward-cache \
     --disable-ipc-flooding-protection \
-    --user-data-dir=/home/kiosk/.config/chromium \
-    --disk-cache-dir=/tmp/chromium-cache \
     "$URL"
