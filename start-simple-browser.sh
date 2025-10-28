@@ -51,6 +51,14 @@ start_x_server() {
             echo "X server is ready on physical display"
             sleep 2
             DISPLAY=:0 openbox >/dev/null 2>&1 &
+            
+            # Configure display to stay always on
+            echo "Configuring display to stay always on..."
+            sleep 2
+            DISPLAY=:0 xset s off 2>/dev/null || true      # Disable screen saver
+            DISPLAY=:0 xset -dpms 2>/dev/null || true      # Disable power management  
+            DISPLAY=:0 xset s noblank 2>/dev/null || true  # Disable screen blanking
+            
             return 0
         fi
         echo "Waiting for X server... ($count/10)"

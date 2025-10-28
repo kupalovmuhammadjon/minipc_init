@@ -3,23 +3,18 @@
 # Production Deployment Script for New Servers
 echo "🚀 Deploying Turniket system on production server..."
 
-# 1. Install required packages
-echo "Installing graphics packages..."
-sudo apt update
-sudo apt install -y \
-    xserver-xorg \
-    xserver-xorg-core \
-    xserver-xorg-input-all \
-    xserver-xorg-video-all \
-    xinit \
-    x11-utils \
-    x11-xserver-utils \
-    xauth \
-    openbox \
-    dbus-x11 \
-    chromium-browser \
-    fonts-liberation \
-    fontconfig
+# Install graphics packages for browser display
+echo "Installing graphics packages for browser display..."
+./setup_remote_browser.sh
+
+# Configure display to stay always on
+echo "Configuring display to stay always on..."
+./keep-display-on.sh
+
+# Set up X server service
+echo "Setting up X server service..."
+sudo systemctl enable x-server-setup.service
+sudo systemctl start x-server-setup.service
 
 # 2. Configure X server permissions
 echo "Configuring X server permissions..."
