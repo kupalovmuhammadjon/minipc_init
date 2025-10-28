@@ -74,23 +74,9 @@ sudo tee /usr/local/bin/start-headless-browser.sh > /dev/null << 'EOF'
 export DISPLAY=:0
 export XAUTHORITY=/tmp/.X0-auth
 
-# Completely disable D-Bus for headless kiosk mode
-export DBUS_SESSION_BUS_ADDRESS=""
+# Minimal environment setup for Chromium only
 export QT_QPA_PLATFORM=xcb
 export GDK_BACKEND=x11
-
-# Additional environment variables to suppress errors
-export XDG_RUNTIME_DIR=/tmp/runtime-$(id -u)
-export XDG_CONFIG_HOME=/tmp/config-$(id -u)
-export XDG_CACHE_HOME=/tmp/cache-$(id -u)
-
-# Suppress X11 and keyboard warnings
-export XKB_DEFAULT_LAYOUT=us
-export XKB_DEFAULT_VARIANT=""
-export XKB_DEFAULT_OPTIONS=""
-
-# Create runtime directories
-mkdir -p "$XDG_RUNTIME_DIR" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
 
 # Function to start Xvfb (Virtual X server) properly
 start_x_server() {
@@ -143,60 +129,36 @@ URL=${1:-"http://localhost:3000"}
 # Wait a bit more for X server to stabilize
 sleep 2
 
-# Skip D-Bus completely for headless kiosk mode
-echo "Starting browser in headless kiosk mode (D-Bus disabled)..."
+# Skip turniket-kiosk completely - use simple Chromium instead
+echo "Starting simple Chromium browser in headless kiosk mode..."
 
-# Start your kiosk application with maximum flags to suppress all system integration
-if command -v turniket-kiosk &> /dev/null; then
-    echo "Starting turniket-kiosk on $URL"
-    turniket-kiosk \
+# Force use of Chromium instead of turniket-kiosk to avoid D-Bus issues
+if command -v chromium-browser &> /dev/null; then
+    echo "Starting Chromium browser in simple kiosk mode on $URL"
+    DISPLAY=:0 chromium-browser \
         --kiosk \
         --no-sandbox \
         --disable-dev-shm-usage \
         --disable-gpu \
-        --disable-software-rasterizer \
-        --disable-background-timer-throttling \
-        --disable-backgrounding-occluded-windows \
-        --disable-renderer-backgrounding \
-        --disable-features=TranslateUI,VizDisplayCompositor \
-        --disable-ipc-flooding-protection \
         --no-first-run \
+        --disable-infobars \
         --disable-default-apps \
-        --disable-popup-blocking \
-        --disable-prompt-on-repost \
-        --no-message-box \
-        --disable-dbus \
         --disable-extensions \
         --disable-plugins \
         --disable-web-security \
-        --disable-features=VizDisplayCompositor \
-        --log-level=3 \
-        --silent \
-        "$URL" 2>/dev/null
-elif command -v chromium-browser &> /dev/null; then
-    echo "Starting Chromium browser in kiosk mode on $URL"
-    chromium-browser \
-        --kiosk \
-        --no-sandbox \
-        --disable-dev-shm-usage \
-        --disable-gpu \
-        --disable-software-rasterizer \
-        --no-first-run \
-        --disable-infobars \
-        --disable-session-crashed-bubble \
+        --disable-features=VizDisplayCompositor,TranslateUI \
+        --no-default-browser-check \
+        --no-first-run-ui \
+        --disable-default-apps \
+        --disable-popup-blocking \
         --disable-translate \
         --disable-background-timer-throttling \
         --disable-backgrounding-occluded-windows \
         --disable-renderer-backgrounding \
-        --disable-features=TranslateUI,VizDisplayCompositor \
-        --disable-default-apps \
-        --disable-dbus \
-        --disable-extensions \
-        --disable-plugins \
-        --disable-web-security \
-        --log-level=3 \
-        --silent \
-        "$URL" 2>/dev/null
+        --disable-field-trial-config \
+        --disable-back-forward-cache \
+        --disable-ipc-flooding-protection \
+        "$URL" &
 elif command -v google-chrome &> /dev/null; then
     echo "Starting Google Chrome in kiosk mode on $URL"
     google-chrome \
