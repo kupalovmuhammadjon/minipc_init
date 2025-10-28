@@ -17,7 +17,8 @@ sudo apt install -y \
     xvfb \
     x11-utils \
     x11-xserver-utils \
-    xauth
+    xauth \
+    dbus-x11
 
 # Install essential libraries for Chromium (minimal set)
 echo "📚 Installing essential browser libraries..."
@@ -72,6 +73,11 @@ sudo tee /usr/local/bin/start-headless-browser.sh > /dev/null << 'EOF'
 export DISPLAY=:0
 export XAUTHORITY=/tmp/.X0-auth
 
+# Fix D-Bus issues for headless environment
+export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+export QT_QPA_PLATFORM=xcb
+export GDK_BACKEND=x11
+
 # Function to start Xvfb (Virtual X server) properly
 start_x_server() {
     echo "Starting Xvfb (Virtual X server)..."
@@ -123,16 +129,64 @@ URL=${1:-"http://localhost:3000"}
 # Wait a bit more for X server to stabilize
 sleep 2
 
-# Start your kiosk application
+# Start D-Bus session for the user if not running
+if [ -z "$DBUS_SESSION_BUS_ADDRESS" ] || ! dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames >/dev/null 2>&1; then
+    echo "Starting D-Bus session..."
+    eval $(dbus-launch --sh-syntax --exit-with-session)
+    export DBUS_SESSION_BUS_ADDRESS
+    export DBUS_SESSION_BUS_PID
+fi
+
+# Start your kiosk application with additional flags to handle headless environment
 if command -v turniket-kiosk &> /dev/null; then
     echo "Starting turniket-kiosk on $URL"
-    turniket-kiosk --kiosk --no-sandbox --disable-dev-shm-usage --disable-gpu --disable-software-rasterizer "$URL"
+    turniket-kiosk \
+        --kiosk \
+        --no-sandbox \
+        --disable-dev-shm-usage \
+        --disable-gpu \
+        --disable-software-rasterizer \
+        --disable-background-timer-throttling \
+        --disable-backgrounding-occluded-windows \
+        --disable-renderer-backgrounding \
+        --disable-features=TranslateUI \
+        --disable-ipc-flooding-protection \
+        --no-first-run \
+        --disable-default-apps \
+        --disable-popup-blocking \
+        --disable-prompt-on-repost \
+        --no-message-box \
+        "$URL"
 elif command -v chromium-browser &> /dev/null; then
     echo "Starting Chromium browser in kiosk mode on $URL"
-    chromium-browser --kiosk --no-sandbox --disable-dev-shm-usage --disable-gpu --disable-software-rasterizer --no-first-run --disable-infobars --disable-session-crashed-bubble --disable-translate "$URL"
+    chromium-browser \
+        --kiosk \
+        --no-sandbox \
+        --disable-dev-shm-usage \
+        --disable-gpu \
+        --disable-software-rasterizer \
+        --no-first-run \
+        --disable-infobars \
+        --disable-session-crashed-bubble \
+        --disable-translate \
+        --disable-background-timer-throttling \
+        --disable-backgrounding-occluded-windows \
+        --disable-renderer-backgrounding \
+        --disable-features=TranslateUI \
+        --disable-default-apps \
+        "$URL"
 elif command -v google-chrome &> /dev/null; then
     echo "Starting Google Chrome in kiosk mode on $URL"
-    google-chrome --kiosk --no-sandbox --disable-dev-shm-usage --disable-gpu --disable-software-rasterizer --no-first-run --disable-infobars "$URL"
+    google-chrome \
+        --kiosk \
+        --no-sandbox \
+        --disable-dev-shm-usage \
+        --disable-gpu \
+        --disable-software-rasterizer \
+        --no-first-run \
+        --disable-infobars \
+        --disable-default-apps \
+        "$URL"
 elif command -v firefox &> /dev/null; then
     echo "Starting Firefox in kiosk-like mode on $URL"
     firefox --kiosk "$URL"
