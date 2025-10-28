@@ -27,18 +27,37 @@ sudo apt install -y \
     libgtk-3-0 \
     libnss3 \
     libxss1 \
-    libgconf-2-4 \
     libxrandr2 \
-    libasound2 \
     libpangocairo-1.0-0 \
     libatk1.0-0 \
     libcairo-gobject2 \
-    libgtk-3-0 \
     libgdk-pixbuf2.0-0 \
     libxcomposite1 \
     libxcursor1 \
     libxi6 \
-    libxtst6
+    libxtst6 \
+    libxdamage1 \
+    libdrm2 \
+    libxfixes3 \
+    libatspi2.0-0
+
+# Install audio libraries (try multiple options)
+echo "🔊 Installing audio libraries..."
+sudo apt install -y libasound2-dev || sudo apt install -y alsa-utils || echo "Audio packages not available"
+
+# Install additional compatibility libraries
+echo "🔧 Installing compatibility libraries..."
+sudo apt install -y \
+    libappindicator3-1 \
+    libxkbcommon0 \
+    libxkbfile1 \
+    ca-certificates \
+    wget \
+    gnupg
+
+# Install a fallback browser if no browser is available
+echo "🌐 Installing fallback browser (Chromium)..."
+sudo apt install -y chromium-browser || echo "Chromium installation failed, will use available browser"
 
 # Install minimal fonts
 echo "� Installing basic fonts..."
@@ -105,9 +124,23 @@ sleep 2
 if command -v turniket-kiosk &> /dev/null; then
     echo "Starting turniket-kiosk on $URL"
     turniket-kiosk --kiosk --no-sandbox --disable-dev-shm-usage --disable-gpu --disable-software-rasterizer "$URL"
+elif command -v chromium-browser &> /dev/null; then
+    echo "Starting Chromium browser in kiosk mode on $URL"
+    chromium-browser --kiosk --no-sandbox --disable-dev-shm-usage --disable-gpu --disable-software-rasterizer --no-first-run --disable-infobars --disable-session-crashed-bubble --disable-translate "$URL"
+elif command -v google-chrome &> /dev/null; then
+    echo "Starting Google Chrome in kiosk mode on $URL"
+    google-chrome --kiosk --no-sandbox --disable-dev-shm-usage --disable-gpu --disable-software-rasterizer --no-first-run --disable-infobars "$URL"
+elif command -v firefox &> /dev/null; then
+    echo "Starting Firefox in kiosk-like mode on $URL"
+    firefox --kiosk "$URL"
 else
-    echo "turniket-kiosk not found. Please install it or use alternative browser."
-    echo "You can try: chromium-browser --kiosk --no-sandbox --disable-dev-shm-usage --disable-gpu '$URL'"
+    echo "❌ No supported browser found!"
+    echo "Please install one of the following:"
+    echo "  - turniket-kiosk (recommended)"
+    echo "  - chromium-browser: sudo apt install chromium-browser"
+    echo "  - google-chrome: wget and install from Google"
+    echo "  - firefox: sudo apt install firefox"
+    exit 1
 fi
 EOF
 
