@@ -77,14 +77,18 @@ fi
 URL=${1:-"http://localhost:3000"}
 sleep 2
 
-# ONLY use Chromium - never turniket-kiosk
-echo "Starting Chromium browser in kiosk mode on $URL"
+# Choose browser (uncomment the one you want)
+echo "Starting browser in kiosk mode on $URL"
 
-# Kill any existing chromium processes
+# Kill any existing browser processes
 pkill -f chromium-browser || true
+pkill -f turniket-kiosk || true
 sleep 2
 
-# Start Chromium with minimal flags
+# Option 1: Use turniket-kiosk (may have D-Bus issues)
+# DISPLAY=:0 turniket-kiosk --kiosk --no-sandbox --disable-dev-shm-usage --disable-gpu "$URL" &
+
+# Option 2: Use Chromium (recommended - stable)
 DISPLAY=:0 chromium-browser \
     --kiosk \
     --no-sandbox \
