@@ -8,14 +8,15 @@ export DISPLAY=:0
 export QT_QPA_PLATFORM=xcb
 export GDK_BACKEND=x11
 
-# Function to start Xvfb
+# Function to start X server for physical display
 start_x_server() {
-    echo "Starting Xvfb (Virtual X server)..."
+    echo "Starting X server for physical display..."
     
     # Kill any existing X server
     pkill -f "Xvfb.*:0" || true
+    pkill -f "Xorg.*:0" || true
     pkill -f "X.*:0" || true
-    sleep 2
+    sleep 3
     
     # Remove lock files
     rm -f /tmp/.X0-lock /tmp/.X11-unix/X0 2>/dev/null || true
@@ -24,22 +25,25 @@ start_x_server() {
     mkdir -p /tmp/.X11-unix 2>/dev/null || true
     chmod 1777 /tmp/.X11-unix 2>/dev/null || true
     
-    # Start Xvfb
-    Xvfb :0 -screen 0 1920x1080x24 -ac -nolisten tcp -dpi 96 >/dev/null 2>&1 &
+    # Start X server on physical display
+    X :0 -nolisten tcp vt1 >/dev/null 2>&1 &
     
     # Wait for X server
     local count=0
-    while [ $count -lt 10 ]; do
+    while [ $count -lt 15 ]; do
         if xdpyinfo -display :0 >/dev/null 2>&1; then
-            echo "Xvfb is ready"
+            echo "X server is ready on physical display"
+            sleep 2
+            # Start minimal window manager
+            DISPLAY=:0 openbox >/dev/null 2>&1 &
             return 0
         fi
-        echo "Waiting for Xvfb... ($count/10)"
+        echo "Waiting for X server... ($count/15)"
         sleep 1
         count=$((count + 1))
     done
     
-    echo "Failed to start Xvfb"
+    echo "Failed to start X server"
     return 1
 }
 

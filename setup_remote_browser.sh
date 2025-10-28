@@ -11,13 +11,18 @@ echo "🚀 Setting up minimal headless browser environment..."
 echo "📦 Updating package index..."
 sudo apt update
 
-# Install minimal X11 components (no desktop environment)
-echo "🖥️  Installing minimal X11 server..."
+# Install X11 components for physical display
+echo "🖥️  Installing X11 server for physical display..."
 sudo apt install -y \
-    xvfb \
+    xserver-xorg \
+    xserver-xorg-core \
+    xserver-xorg-input-all \
+    xserver-xorg-video-all \
+    xinit \
     x11-utils \
     x11-xserver-utils \
     xauth \
+    openbox \
     dbus-x11
 
 # Install essential libraries for Chromium (minimal set)
